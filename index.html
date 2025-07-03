@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My Mood Journal</title>
+  <style>
+    body { font-family: sans-serif; background: #f0f4f8; margin:0; padding:0; }
+    .container { max-width:600px; margin:auto; background:white; padding:2rem; margin-top:2rem; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.1); }
+    h1, h2 { text-align:center; color:#333; }
+    #date { text-align:center; font-weight:bold; margin-bottom:1rem; }
+    .emoji-picker { display:flex; justify-content:center; gap:10px; font-size:2rem; cursor:pointer; }
+    .emoji-picker span.selected { border:2px solid #4CAF50; border-radius:50%; }
+    textarea { width:100%; height:150px; font-size:1rem; padding:0.5rem; margin-top:0.5rem; border:1px solid #ccc; border-radius:8px; resize:vertical; }
+    button { display:block; margin:1rem auto; background:#4CAF50; color:white; border:none; padding:0.75rem 1.5rem; font-size:1rem; border-radius:8px; cursor:pointer; transition:background 0.3s; }
+    button:hover { background:#45a049; }
+    #encouragement { text-align:center; color:#e53935; font-weight:bold; margin-top:1rem; }
+    #history { margin-top:2rem; }
+    .entry-link { display:block; text-align:center; margin:0.3rem 0; color:#333; text-decoration:underline; cursor:pointer; }
+    .entry-link:hover { color:#4CAF50; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>My Daily Journal</h1>
+    <p id="date"></p>
+
+    <section>
+      <h2>Morning Mood</h2>
+      <div class="emoji-picker" id="morning-mood">
+        <span>😊</span><span>😐</span><span>😞</span><span>😡</span><span>😭</span>
+      </div>
+    </section>
+
+    <section>
+      <h2>Evening Mood</h2>
+      <div class="emoji-picker" id="evening-mood">
+        <span>😊</span><span>😐</span><span>😞</span><span>😡</span><span>😭</span>
+      </div>
+    </section>
+
+    <section>
+      <h2>Journal Entry</h2>
+      <textarea id="journal-text" placeholder="How do you feel today?"></textarea>
+    </section>
+
+    <button id="save-button">Save Entry</button>
+    <p id="encouragement"></p>
+
+    <section id="history">
+      <h2>Past Entries</h2>
+      <div id="history-list"></div>
+    </section>
+  </div>
+
+  <script>
+    const dateEl = document.getElementById("date");
+    const morningMoodEl = document.getElementById("morning-mood");
+    const eveningMoodEl = document.getElementById("evening-mood");
+    const journalTextEl = document.getElementById("journal-text");
+    const encouragementEl = document.getElementById("encouragement");
+    const historyListEl = document.getElementById("history-list");
+
+    const today = new Date().toISOString().split("T")[0];
+    dateEl.textContent = `Date: ${today}`;
+
+    // Load saved entry if exists
+    loadEntry(today);
+
+    // Populate history links
+    updateHistory();
+
+    function selectEmoji(container, selectedEmoji) {
+      const emojis = container.querySelectorAll("span");
+      emojis.forEach(span => {
+        span.classList.toggle("selected", span.textContent === selectedEmoji);
+      });
+    }
+
+    morningMoodEl.addEventListener("click", e => {
+      if (e.target.tagName === "SPAN") selectEmoji(morningMoodEl, e.target.textContent);
+    });
+    eveningMoodEl.addEventListener("click", e => {
+      if (e.target.tagName === "SPAN") selectEmoji(eveningMoodEl, e.target.textContent);
+    });
+
+    document.getElementById("save-button").addEventListener("click", () => {
+      const morningMood = morningMoodEl.querySelector(".selected")?.textContent || "";
+      const eveningMood = eveningMoodEl.querySelector(".selected")?.textContent || "";
+      const text = journalTextEl.value.trim();
+      const entry = { morningMood, eveningMood, text };
+      localStorage.setItem(today, JSON.stringify(entry));
+
+      if (["😞", "😡", "😭"].includes(morningMood) || ["😞", "😡", "😭"].includes(eveningMood)) {
+        encouragementEl.textContent = "It's okay to feel this way. Try a deep breath, a short walk, or reaching out to someone you trust ❤️";
+      } else encouragementEl.textContent = "Great job checking in today! 🌟";
+
+      updateHistory();
+    });
+
+    function loadEntry(date) {
+      const saved = JSON.parse(localStorage.getItem(date));
+      if (saved) {
+        selectEmoji(morningMoodEl, saved.morningMood);
+        selectEmoji(eveningMoodEl, saved.eveningMood);
+        journalTextEl.value = saved.text;
+      } else {
+        selectEmoji(morningMoodEl, "");
+        selectEmoji(eveningMoodEl, "");
+        journalTextEl.value = "";
+      }
+      encouragementEl.textContent = "";
+    }
+
+    function updateHistory() {
+      historyListEl.innerHTML = "";
+      const keys = Object.keys(localStorage).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort().reverse();
+      keys.forEach(date => {
+        const link = document.createElement("div");
+        link.className = "entry-link";
+        link.textContent = date;
+        link.onclick = () => {
+          loadEntry(date);
+          dateEl.textContent = `Date: ${date}`;
+        };
+        historyListEl.appendChild(link);
+      });
+    }
+  </script>
+</body>
+</html>
